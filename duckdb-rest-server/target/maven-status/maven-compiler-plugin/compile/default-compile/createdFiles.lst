@@ -1,0 +1,5 @@
+com/slim/dto/ExecuteDuckDBResultSetMetaData.class
+com/slim/dto/ExecuteResponse.class
+com/slim/dto/ExecuteRequest.class
+com/slim/server/DuckRestServerApplication.class
+com/slim/server/DuckDBController.class

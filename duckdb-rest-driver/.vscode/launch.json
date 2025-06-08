@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run DuckProxyClient",
+      "request": "launch",
+      "mainClass": "com.slim.driver.DuckProxyClient",
+      "classPaths": [
+        "${workspaceFolder}/target/classes"
+      ],
+      "console": "integratedTerminal"
+    }
+  ]
+}
