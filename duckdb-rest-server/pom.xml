@@ -10,8 +10,6 @@
   </parent>
   <artifactId>duckdb-rest-server</artifactId>
 
-
-
   <dependencies>
     <!-- Spring Boot Web -->
     <dependency>

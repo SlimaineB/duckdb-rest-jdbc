@@ -20,7 +20,7 @@ This approach is ideal for querying remote data sources (such as Parquet files o
 
 ## Prerequisites
 
-- Java 11 or higher
+- Java 17 or higher
 - Maven
 - Docker (optional, for server deployment)
 
