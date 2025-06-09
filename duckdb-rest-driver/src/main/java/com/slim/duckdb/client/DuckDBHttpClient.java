@@ -1,4 +1,4 @@
-package com.slim.driver;
+package com.slim.duckdb.client;
 
 import java.sql.SQLException;
 
@@ -14,11 +14,19 @@ import com.slim.dto.ExecuteResponse;
 
 public class DuckDBHttpClient {
 
+    private String backendUrl = "http://localhost:8080/";
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    public DuckDBHttpClient(String backendUrl) {
+        if (backendUrl != null && !backendUrl.isEmpty()) {
+            this.backendUrl = backendUrl;
+        }
+    }
 
     public ExecuteResponse execute(String sql, Object[] params) throws SQLException {
         try {
-            String url = "http://localhost:80/execute";
+            String executeUrl = this.backendUrl+"/execute"; // Direct access to DuckDB REST server
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -27,7 +35,7 @@ public class DuckDBHttpClient {
             HttpEntity<ExecuteRequest> entity = new HttpEntity<>(request, headers);
 
             ResponseEntity<ExecuteResponse> response = restTemplate.exchange(
-                    url,
+                    executeUrl,
                     HttpMethod.POST,
                     entity,
                     ExecuteResponse.class

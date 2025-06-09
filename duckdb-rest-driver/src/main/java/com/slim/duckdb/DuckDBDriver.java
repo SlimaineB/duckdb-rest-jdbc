@@ -104,6 +104,27 @@ public class DuckDBDriver implements java.sql.Driver {
             props = (Properties) info.clone();
         }
 
+        /* START : Add Host:Port */
+        if (url != null && url.startsWith("jdbc:duckdb://")) {
+            String backendUrl = url.substring("jdbc:duckdb://".length());
+            String[] parts = backendUrl.split("\\?", 2);
+            String hostPort = parts[0]; // ex: localhost:8080
+            props.put("backendUrl", hostPort); // Ajoute host:port dans les propriétés
+
+            if (parts.length > 1) {
+                String[] params = parts[1].split("&");
+                for (String param : params) {
+                    String[] kv = param.split("=", 2);
+                    if (kv.length == 2 &&
+                        ("useEncryption".equals(kv[0]) || "disableCertificateVerification".equals(kv[0]))) {
+                        props.put(kv[0], kv[1]);
+                    }
+                }
+            }
+        }
+
+        /* END Add Host:Port */
+
         // URL options
         ParsedProps pp = parsePropsFromUrl(url);
 

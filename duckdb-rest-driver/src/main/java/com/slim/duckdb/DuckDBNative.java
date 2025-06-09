@@ -16,8 +16,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.slim.driver.DuckDBHttpClient;
 import com.slim.dto.ExecuteResponse;
+import com.slim.duckdb.client.DuckDBHttpClient;
 
 
 class DuckDBNative {
@@ -32,8 +32,8 @@ class DuckDBNative {
 
     // results ConnectionHolder reference objectimport java.nio.ByteBuffer;
 
-
-
+    private static String backendUrl = "http://localhost:8080"; // Default URL for DuckDB REST server
+    private static final Map<ByteBuffer, DuckDBConnection> connectionMap = new HashMap<>();
     private static final Map<ByteBuffer, String> statementMap = new HashMap<>();
     private static final Map<ByteBuffer, Object[]> statementParamsMap = new HashMap<>();
     private static final Map<ByteBuffer, DuckDBResultSetMetaData> resultMetaMap = new HashMap<>();
@@ -44,6 +44,21 @@ class DuckDBNative {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     static ByteBuffer duckdb_jdbc_startup(byte[] path, boolean read_only, Properties props) throws SQLException {
+
+
+        backendUrl = JdbcUtils.removeOption(props, "backendUrl", backendUrl);
+        if (backendUrl == null || backendUrl.isEmpty()) {
+            throw new SQLException("Backend URL must be specified in properties");
+        }
+        
+        boolean useEncryption= JdbcUtils.isStringTruish(JdbcUtils.removeOption(props, "useEncryption", "false"), false);
+        if(useEncryption) {
+            backendUrl = "https://" + backendUrl; 
+        }else{
+            backendUrl = "http://" + backendUrl; 
+        }
+
+        System.out.println("[DuckDBNative] Backend URL set to: " + backendUrl);
         // Crée un UUID unique
         UUID uuid = UUID.randomUUID();
 
@@ -115,7 +130,7 @@ class DuckDBNative {
 
             if (statement == null) throw new SQLException("Statement not found for ref");
 
-            DuckDBHttpClient client = new DuckDBHttpClient();
+            DuckDBHttpClient client = new DuckDBHttpClient(backendUrl);
 
             // On envoie une exécution à vide juste pour récupérer les métadonnées
             ExecuteResponse response = client.execute(statement, params);
@@ -143,7 +158,7 @@ class DuckDBNative {
             if (statement == null) throw new SQLException("Statement not found for ref");
 
    
-            DuckDBHttpClient client = new DuckDBHttpClient();
+            DuckDBHttpClient client = new DuckDBHttpClient(backendUrl);
             ExecuteResponse response =   client.execute(statement, params);
             if(response.isError()) {
                 throw new SQLException(response.getErrorMessage());

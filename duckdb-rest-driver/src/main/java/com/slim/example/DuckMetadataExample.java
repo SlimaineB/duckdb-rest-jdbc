@@ -1,4 +1,4 @@
-package com.slim.driver;
+package com.slim.example;
 
 
 
@@ -7,7 +7,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 
-public class DuckMetaTest {
+public class DuckMetadataExample {
     public static void main(String[] args) {
         try {
             // Chargement du driver REST personnalisé

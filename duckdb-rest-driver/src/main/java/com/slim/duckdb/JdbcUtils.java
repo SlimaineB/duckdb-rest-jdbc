@@ -53,6 +53,8 @@ final class JdbcUtils {
     }
 
     static String dbNameFromUrl(String url) throws SQLException {
+
+        System.out.println("[JdbcUtils] dbNameFromUrl called with URL: " + url);
         if (null == url) {
             throw new SQLException("Invalid null URL specified");
         }
@@ -73,6 +75,10 @@ final class JdbcUtils {
         if (dbName.startsWith(MEMORY_DB.substring(1))) {
             dbName = ":" + dbName;
         }
+        if(dbName.startsWith("//")) {
+            dbName = dbName.split(url.contains("?") ? "\\?" : ";")[0];
+        }
+        System.out.println("[JdbcUtils] Extracted dbName: " + dbName);
         return dbName;
     }
 

@@ -64,9 +64,12 @@ public final class DuckDBConnection implements java.sql.Connection {
             properties = new Properties();
         }
         String dbName = dbNameFromUrl(url);
+        System.out.println("[DuckDBConnection] Creating new connection to " + dbName + " with readOnly=" + readOnly +
+                           ", sessionInitSQL='" + sessionInitSQL + "' and properties: " + properties);
         String autoCommitStr = removeOption(properties, JDBC_AUTO_COMMIT);
         boolean autoCommit = isStringTruish(autoCommitStr, true);
         ByteBuffer nativeReference = DuckDBNative.duckdb_jdbc_startup(dbName.getBytes(UTF_8), readOnly, properties);
+        System.out.println("[DuckDBConnection] properties: " + properties);
         return new DuckDBConnection(nativeReference, url, readOnly, sessionInitSQL, autoCommit);
     }
 
