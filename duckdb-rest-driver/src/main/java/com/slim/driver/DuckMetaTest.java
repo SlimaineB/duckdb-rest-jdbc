@@ -18,7 +18,7 @@ public class DuckMetaTest {
             try (Connection conn = DriverManager.getConnection(url)) {
 
                 DatabaseMetaData meta = conn.getMetaData();
-/* 
+ 
                 // 1. Infos générales
                 System.out.println("Driver: " + meta.getDriverName() + " v" + meta.getDriverVersion());
                 System.out.println("DB: " + meta.getDatabaseProductName() + " v" + meta.getDatabaseProductVersion());
@@ -30,7 +30,7 @@ public class DuckMetaTest {
                         System.out.println(" - " + rs.getString("TABLE_SCHEM"));
                     }
                 }
-*/
+
                 // 3. Liste des tables
                 System.out.println("\n=== Tables ===");
                 try (ResultSet rs = meta.getTables("memory", "main", "%", new String[]{"BASE TABLE"})) {

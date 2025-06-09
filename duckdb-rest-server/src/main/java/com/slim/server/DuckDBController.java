@@ -117,78 +117,11 @@ public class DuckDBController {
         } catch (Exception e) {
             System.err.println("[DuckDBController] Erreur: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
+            return ResponseEntity.status(500).body(new ExecuteResponse(e.getMessage()));
         }
     }
 
 
 
-    @PostMapping("/execute_old")
-    public ResponseEntity<ExecuteResponse> execute_old(@RequestBody ExecuteRequest request) {
-        System.out.println("[DuckDBController] Reçu requête SQL: " + request.sql);
-        try (PreparedStatement stmt = connection.prepareStatement(request.sql)) {
-
-            // Appliquer les paramètres
-            if (request.params != null) {
-                System.out.println("[DuckDBController] Paramètres reçus: " + request.params);
-                for (int i = 0; i < request.params.length; i++) {
-                    stmt.setObject(i + 1, request.params[i]);
-                }
-            } else {
-                System.out.println("[DuckDBController] Aucun paramètre fourni.");
-            }
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                System.out.println("[DuckDBController] Exécution de la requête réussie.");
-                ResultSetMetaData meta = rs.getMetaData();
-                int colCount = meta.getColumnCount();
-
-                // Extraire les métadonnées
-                String[] columnNames = new String[colCount];
-                String[] columnTypes = new String[colCount];
-                String[] columnDetails = new String[colCount];
-
-                for (int i = 0; i < colCount; i++) {
-                    columnNames[i] = meta.getColumnName(i + 1);
-                    columnTypes[i] = meta.getColumnTypeName(i + 1);
-                    columnDetails[i] = meta.getColumnClassName(i + 1);
-                }
-                System.out.println("[DuckDBController] Colonnes: " + String.join(", ", columnNames));
-                System.out.println("[DuckDBController] Colonnes: " + String.join(", ", columnTypes));
-                System.out.println("[DuckDBController] Colonnes: " + String.join(", ", columnDetails));
-
-                // Construire metadata conforme à DuckDB JDBC
-                ExecuteDuckDBResultSetMetaData metadata = new ExecuteDuckDBResultSetMetaData(
-                    stmt.getParameterMetaData().getParameterCount(),
-                    colCount,
-                    columnNames,
-                    columnTypes,
-                    columnDetails,
-                    StatementReturnType.QUERY_RESULT.name(),
-                    columnTypes,
-                    columnDetails
-                );
-
-                // Extraire les données
-                List<List<Object>> rows = new ArrayList<>();
-                int rowCount = 0;
-                while (rs.next()) {
-                    List<Object> row = new ArrayList<>();
-                    for (int i = 1; i <= colCount; i++) {
-                        row.add(rs.getObject(i));
-                    }
-                    rows.add(row);
-                    rowCount++;
-                }
-                System.out.println("[DuckDBController] Nombre de lignes extraites: " + rowCount);
-
-                return ResponseEntity.ok(new ExecuteResponse(metadata, rows));
-            }
-
-        } catch (Exception e) {
-            System.out.println("[DuckDBController] Erreur lors de l'exécution: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
+    
 }

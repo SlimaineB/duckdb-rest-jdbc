@@ -109,7 +109,6 @@ class DuckDBNative {
     static DuckDBResultSetMetaData duckdb_jdbc_prepared_statement_meta(ByteBuffer stmt_ref, Object[] params) throws SQLException {
         try {
             String statement = statementMap.get(stmt_ref);
-            // Object[] params = statementParamsMap.get(stmt_ref);
             System.out.println("Paramètres reçus pour la récupération des métadonnées : " + (params != null ? params.length : 0));
 
             System.out.println("Récupération des métadonnées pour le statement : " + statement);    
@@ -120,6 +119,9 @@ class DuckDBNative {
 
             // On envoie une exécution à vide juste pour récupérer les métadonnées
             ExecuteResponse response = client.execute(statement, params);
+            if(response.isError()) {
+                throw new SQLException(response.getErrorMessage());
+            }
 
             return response.getMetadata().toDuckDBResultSetMetaData(); 
 
@@ -143,6 +145,9 @@ class DuckDBNative {
    
             DuckDBHttpClient client = new DuckDBHttpClient();
             ExecuteResponse response =   client.execute(statement, params);
+            if(response.isError()) {
+                throw new SQLException(response.getErrorMessage());
+            }
 
             // Simuler un result_ref avec UUID
             UUID resultId = UUID.randomUUID();

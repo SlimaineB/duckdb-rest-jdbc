@@ -4,12 +4,19 @@ import java.util.List;
 
 
 public class ExecuteResponse {
-    public ExecuteDuckDBResultSetMetaData metadata;
-    public List<List<Object>> data;
+    private ExecuteDuckDBResultSetMetaData metadata;
+    private List<List<Object>> data;
+    private boolean error = false;
+    private String errorMessage = null;
 
     public ExecuteResponse(ExecuteDuckDBResultSetMetaData metadata, List<List<Object>> data) {
         this.metadata = metadata;
         this.data = data;
+    }
+
+    public ExecuteResponse(String errorMessage) {
+        this.error= true;
+        this.errorMessage = errorMessage;
     }
 
     public ExecuteResponse() {
@@ -31,6 +38,14 @@ public class ExecuteResponse {
 
     public void setData(List<List<Object>> data) {
         this.data = data;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public boolean isError() {
+        return error;
     }
 
 

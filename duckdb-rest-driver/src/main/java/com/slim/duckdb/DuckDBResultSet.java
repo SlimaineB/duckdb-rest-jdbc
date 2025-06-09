@@ -31,7 +31,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -50,6 +53,7 @@ public class DuckDBResultSet implements ResultSet {
     private int chunkIdx = 0;
     private boolean finished = false;
     private boolean wasNull;
+    private boolean hasCurrentRow = false; // pour savoir si une ligne est active
 
     public DuckDBResultSet(DuckDBConnection conn, DuckDBPreparedStatement stmt, DuckDBResultSetMetaData meta,
                            ByteBuffer resultRef) throws SQLException {
@@ -73,22 +77,34 @@ public class DuckDBResultSet implements ResultSet {
         return meta;
     }
 
+    @Override
     public boolean next() throws SQLException {
         checkOpen();
+
         if (finished) {
+            hasCurrentRow = false;
             return false;
         }
+
         chunkIdx++;
+
+        // Si le chunk est vide ou l’index dépasse, on tente d’en récupérer un autre
         if (currentChunk.length == 0 || chunkIdx > currentChunk[0].length) {
-            currentChunk = fetchChunk();
+            currentChunk = fetchChunk(); // récupère le prochain chunk de résultats
             chunkIdx = 1;
         }
-        if (currentChunk.length == 0) {
+
+        // Si toujours vide, on a fini
+        if (currentChunk.length == 0 || currentChunk[0].length == 0) {
             finished = true;
+            hasCurrentRow = false;
             return false;
         }
+
+        hasCurrentRow = true;
         return true;
     }
+
 
     public void close() throws SQLException {
         if (isClosed()) {
@@ -185,14 +201,21 @@ public class DuckDBResultSet implements ResultSet {
     }
 
     private boolean checkAndNull(int columnIndex) throws SQLException {
+        checkOpen();
         check(columnIndex);
+
+        if (!hasCurrentRow) {
+            throw new SQLException("No row in context: call next() first");
+        }
+
         try {
             wasNull = currentChunk[columnIndex - 1].check_and_null(chunkIdx - 1);
+            return wasNull;
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new SQLException("No row in context", e);
         }
-        return wasNull;
     }
+
 
     public JsonNode getJsonObject(int columnIndex) throws SQLException {
         String result = getLazyString(columnIndex);
