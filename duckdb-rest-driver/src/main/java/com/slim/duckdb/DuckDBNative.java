@@ -35,6 +35,7 @@ class DuckDBNative {
 
 
     private static final Map<ByteBuffer, String> statementMap = new HashMap<>();
+    private static final Map<ByteBuffer, Object[]> statementParamsMap = new HashMap<>();
     private static final Map<ByteBuffer, DuckDBResultSetMetaData> resultMetaMap = new HashMap<>();
     private static Map<ByteBuffer, List<List<Object>>> resultDataMap = new ConcurrentHashMap<>();
     private static Set<ByteBuffer> alreadyFetchedResults = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -78,6 +79,8 @@ class DuckDBNative {
     static String duckdb_jdbc_get_catalog(ByteBuffer conn_ref) { return null; }
 
     static ByteBuffer duckdb_jdbc_prepare(ByteBuffer conn_ref, byte[] query) throws SQLException {
+        
+
         // Simule la création d'un statement préparé
         UUID stmtId = UUID.randomUUID();
 
@@ -88,6 +91,7 @@ class DuckDBNative {
 
         // Enregistre le statement (optionnel : tu peux y mettre aussi la requête ou conn_ref pour vérification)
         statementMap.put(stmtRef, new String(query));
+
 
         return stmtRef;
     }
@@ -102,7 +106,29 @@ class DuckDBNative {
     }
 
 
-    static DuckDBResultSetMetaData duckdb_jdbc_prepared_statement_meta(ByteBuffer stmt_ref) throws SQLException { return null; }
+    static DuckDBResultSetMetaData duckdb_jdbc_prepared_statement_meta(ByteBuffer stmt_ref, Object[] params) throws SQLException {
+        try {
+            String statement = statementMap.get(stmt_ref);
+            // Object[] params = statementParamsMap.get(stmt_ref);
+            System.out.println("Paramètres reçus pour la récupération des métadonnées : " + (params != null ? params.length : 0));
+
+            System.out.println("Récupération des métadonnées pour le statement : " + statement);    
+
+            if (statement == null) throw new SQLException("Statement not found for ref");
+
+            DuckDBHttpClient client = new DuckDBHttpClient();
+
+            // On envoie une exécution à vide juste pour récupérer les métadonnées
+            ExecuteResponse response = client.execute(statement, params);
+
+            return response.getMetadata().toDuckDBResultSetMetaData(); 
+
+        } catch (Exception e) {
+            throw new SQLException("Erreur HTTP dans duckdb_jdbc_prepared_statement_meta", e);
+        }
+    }
+
+
 
     // returns res_ref result reference object
 
@@ -110,7 +136,7 @@ class DuckDBNative {
     static ByteBuffer duckdb_jdbc_execute(ByteBuffer stmt_ref, Object[] params) throws SQLException {
         try {
 
-            
+            System.out.println("Paramètres reçus pour l'exécution : " + (params != null ? params.length : 0));
             String statement = statementMap.get(stmt_ref);
             if (statement == null) throw new SQLException("Statement not found for ref");
 
@@ -125,7 +151,7 @@ class DuckDBNative {
             resultRef.putLong(resultId.getLeastSignificantBits());
             resultRef.flip();
 
-           resultDataMap.put(resultRef, response.getData());   
+            resultDataMap.put(resultRef, response.getData());   
 
             resultMetaMap.put(resultRef, response.getMetadata().toDuckDBResultSetMetaData());
 

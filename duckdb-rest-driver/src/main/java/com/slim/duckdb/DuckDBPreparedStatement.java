@@ -121,6 +121,7 @@ public class DuckDBPreparedStatement implements PreparedStatement {
     }
 
     private void prepare(String sql) throws SQLException {
+        System.out.println("prepare: " + sql);
         checkOpen();
         if (sql == null) {
             throw new SQLException("sql query parameter cannot be null");
@@ -156,7 +157,7 @@ public class DuckDBPreparedStatement implements PreparedStatement {
                 conn.connRefLock.unlock();
             }
 
-            meta = DuckDBNative.duckdb_jdbc_prepared_statement_meta(stmtRef);
+            // meta = DuckDBNative.duckdb_jdbc_prepared_statement_meta(stmtRef, this.params);
         } catch (SQLException e) {
             close();
             throw e;
@@ -303,19 +304,36 @@ public class DuckDBPreparedStatement implements PreparedStatement {
     @Override
     public void setObject(int parameterIndex, Object x) throws SQLException {
         checkOpen();
-        int paramsCount = getParameterMetaData().getParameterCount();
-        if (parameterIndex < 1 || parameterIndex > paramsCount) {
-            throw new SQLException("Parameter index out of bounds");
+
+        // Si meta est dispo, on peut valider paramètre indexé
+        if (meta != null && meta.param_meta != null) {
+            int paramsCount = getParameterMetaData().getParameterCount();
+            if (parameterIndex < 1 || parameterIndex > paramsCount) {
+                throw new SQLException("Parameter index out of bounds");
+            }
         }
-        if (params.length == 0) {
-            params = new Object[paramsCount];
-        }
-        // we are doing lower/upper extraction from BigInteger on Java side
+
+        // S'assurer que le tableau `params` est assez grand
+        ensureParamsCapacity(parameterIndex);
+
+        // Conversion BigInteger → DuckDBHugeInt
         if (x instanceof BigInteger) {
             x = new DuckDBHugeInt((BigInteger) x);
         }
+
         params[parameterIndex - 1] = x;
     }
+
+    private void ensureParamsCapacity(int parameterIndex) {
+        if (params == null || params.length < parameterIndex) {
+            Object[] newParams = new Object[parameterIndex];
+            if (params != null) {
+                System.arraycopy(params, 0, newParams, 0, params.length);
+            }
+            params = newParams;
+        }
+    }
+
 
     @Override
     public void setNull(int parameterIndex, int sqlType) throws SQLException {
