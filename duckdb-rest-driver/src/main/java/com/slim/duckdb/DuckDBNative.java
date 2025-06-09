@@ -234,13 +234,55 @@ class DuckDBNative {
                 try {
                     ByteBuffer buffer;
                     switch (duckdbTypeName.toUpperCase()) {
+                        case "BOOLEAN":
+                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.put((byte) ((Boolean.TRUE.equals(columnData[i])) ? 1 : 0));
+                            }
+                            break;
+                        case "TINYINT":
+                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.put(columnData[i] == null ? (byte) 0 : ((Number) columnData[i]).byteValue());
+                            }
+                            break;
+                        case "UTINYINT":
+                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.put(columnData[i] == null ? (byte) 0 : (byte) (((Number) columnData[i]).intValue() & 0xFF));
+                            }
+                            break;
+                        case "SMALLINT":
+                            buffer = ByteBuffer.allocate(rowCount * Short.BYTES).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.putShort(columnData[i] == null ? (short) 0 : ((Number) columnData[i]).shortValue());
+                            }
+                            break;
+                        case "USMALLINT":
+                            buffer = ByteBuffer.allocate(rowCount * Short.BYTES).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.putShort(columnData[i] == null ? (short) 0 : (short) (((Number) columnData[i]).intValue() & 0xFFFF));
+                            }
+                            break;
                         case "INTEGER":
                             buffer = ByteBuffer.allocate(rowCount * Integer.BYTES).order(ByteOrder.nativeOrder());
                             for (int i = 0; i < rowCount; i++) {
                                 buffer.putInt(columnData[i] == null ? 0 : ((Number) columnData[i]).intValue());
                             }
                             break;
+                        case "UINTEGER":
+                            buffer = ByteBuffer.allocate(rowCount * Integer.BYTES).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.putInt(columnData[i] == null ? 0 : ((Number) columnData[i]).intValue());
+                            }
+                            break;
                         case "BIGINT":
+                            buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < rowCount; i++) {
+                                buffer.putLong(columnData[i] == null ? 0L : ((Number) columnData[i]).longValue());
+                            }
+                            break;
+                        case "UBIGINT":
                             buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
                             for (int i = 0; i < rowCount; i++) {
                                 buffer.putLong(columnData[i] == null ? 0L : ((Number) columnData[i]).longValue());
@@ -258,12 +300,37 @@ class DuckDBNative {
                                 buffer.putDouble(columnData[i] == null ? 0.0d : ((Number) columnData[i]).doubleValue());
                             }
                             break;
-                        case "BOOLEAN":
-                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
+                        case "TIMESTAMP":
+                        case "TIMESTAMP_MS":
+                        case "TIMESTAMP_NS":
+                        case "TIMESTAMP_S":
+                            buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
                             for (int i = 0; i < rowCount; i++) {
-                                buffer.put((byte) ((Boolean.TRUE.equals(columnData[i])) ? 1 : 0));
+                                if (columnData[i] == null) {
+                                    buffer.putLong(0L);
+                                } else if (columnData[i] instanceof Number) {
+                                    buffer.putLong(((Number) columnData[i]).longValue());
+                                } else if (columnData[i] instanceof String) {
+                                    String s = (String) columnData[i];
+                                    try {
+                                        long millis;
+                                        if (s.contains("T")) {
+                                            java.time.OffsetDateTime odt = java.time.OffsetDateTime.parse(s);
+                                            millis = odt.toInstant().toEpochMilli();
+                                        } else {
+                                            java.sql.Timestamp ts = java.sql.Timestamp.valueOf(s);
+                                            millis = ts.getTime();
+                                        }
+                                        buffer.putLong(millis);
+                                    } catch (Exception e) {
+                                        throw new SQLException("Impossible de parser le TIMESTAMP: " + columnData[i], e);
+                                    }
+                                } else {
+                                    throw new SQLException("Type TIMESTAMP inattendu: " + columnData[i].getClass());
+                                }
                             }
                             break;
+                        // Ajoute ici d'autres types à longueur fixe si besoin (ex: DECIMAL, UUID, etc.)
                         default:
                             throw new SQLException("Type non supporté pour constlen_data : " + duckdbTypeName);
                     }
