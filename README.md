@@ -1,15 +1,22 @@
 # duckdb-rest-jdbc
 
-This project contains two components:
+duckdb-rest-jdbc is a solution for running DuckDB in a stateless, distributed, and scalable way.  
+It enables you to cluster multiple DuckDB instances and expose them through a REST API, making it easy to deploy behind a load balancer for high availability and scalability.
 
-- **duckdb-rest-driver**: A custom JDBC driver that allows making REST calls to a remote backend.
-- **duckdb-rest-server**: The backend server that exposes the real DuckDB JDBC driver over a REST API.
+A custom JDBC driver, based on the official DuckDB driver, allows your applications to connect to this REST API seamlessly.  
+This approach is ideal for querying remote data sources (such as Parquet files on S3) without managing local state or storage.
+
+## Components
+
+- **duckdb-rest-driver**: A custom JDBC driver that sends SQL queries as REST calls to a remote backend.
+- **duckdb-rest-server**: The backend server that exposes the official DuckDB JDBC driver over a REST API.
 
 ## Features
 
 - Execute SQL queries on DuckDB remotely via HTTP/REST.
 - Compatible with tools and applications using JDBC.
-- Easy to deploy and integrate into distributed architectures.
+- Stateless architecture: ideal for querying remote files.
+- Easy to deploy, scale, and integrate into distributed systems.
 
 ## Prerequisites
 
