@@ -21,7 +21,7 @@ This project contains two components:
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/duckdb-rest-jdbc.git
+   git clone https://github.com/SlimaineB/duckdb-rest-jdbc.git
    cd duckdb-rest-jdbc
    ```
 
