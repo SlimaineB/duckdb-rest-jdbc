@@ -18,7 +18,7 @@ public class DuckDBHttpClient {
 
     public ExecuteResponse execute(String sql, Object[] params) throws SQLException {
         try {
-            String url = "http://localhost:8080/execute";
+            String url = "http://localhost:80/execute";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
