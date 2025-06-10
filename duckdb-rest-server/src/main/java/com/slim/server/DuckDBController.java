@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.slim.dto.ExecuteDuckDBResultSetMetaData;
-import com.slim.dto.ExecuteRequest;
-import com.slim.dto.ExecuteResponse;  
+import ord.duckdb.dto.ExecuteDuckDBResultSetMetaData;
+import ord.duckdb.dto.ExecuteRequest;
+import ord.duckdb.dto.ExecuteResponse;  
 
 @RestController
 public class DuckDBController {
@@ -66,6 +66,7 @@ public class DuckDBController {
                             row.add(rs.getObject(i));
                         }
                         rows.add(row);
+                        System.out.println("Row: " + row);
                     }
 
                     metadata = new ExecuteDuckDBResultSetMetaData(

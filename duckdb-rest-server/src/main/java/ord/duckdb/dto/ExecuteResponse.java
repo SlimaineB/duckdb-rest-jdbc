@@ -1,4 +1,4 @@
-package com.slim.dto;
+package ord.duckdb.dto;
 
 import java.util.List;
 

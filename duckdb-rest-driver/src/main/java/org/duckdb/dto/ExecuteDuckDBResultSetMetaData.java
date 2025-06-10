@@ -1,4 +1,6 @@
-package com.slim.dto;
+package org.duckdb.dto;
+
+import org.duckdb.DuckDBResultSetMetaData;
 
 public class ExecuteDuckDBResultSetMetaData {
 
@@ -59,4 +61,21 @@ public class ExecuteDuckDBResultSetMetaData {
     public String[] getParam_types_string() {
         return param_types_string;
     }
+
+    public DuckDBResultSetMetaData toDuckDBResultSetMetaData() {
+        return new DuckDBResultSetMetaData(
+            param_count,
+            column_count,
+            column_names,
+            column_types_string,
+            column_types_details,
+            return_type,
+            param_types_string,
+            param_types_details
+        );
+
+    }
+
+
+
 }

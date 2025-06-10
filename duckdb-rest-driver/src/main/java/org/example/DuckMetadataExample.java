@@ -1,4 +1,4 @@
-package com.slim.example;
+package org.example;
 
 
 
@@ -22,15 +22,6 @@ public class DuckMetadataExample {
                 // 1. Infos générales
                 System.out.println("Driver: " + meta.getDriverName() + " v" + meta.getDriverVersion());
                 System.out.println("DB: " + meta.getDatabaseProductName() + " v" + meta.getDatabaseProductVersion());
-
-
-                // 2. Liste des schémas
-                System.out.println("\n=== Catalogs ===");
-                try (ResultSet rs = meta.getCatalogs()) {
-                    while (rs.next()) {
-                        System.out.println(" - " + rs.getString("TABLE_CAT"));
-                    }
-                }
 
                 // 2. Liste des schémas
                 System.out.println("\n=== Schemas ===");
