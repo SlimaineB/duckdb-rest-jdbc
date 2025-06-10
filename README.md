@@ -20,7 +20,7 @@ This approach is ideal for querying remote data sources (such as Parquet files o
 
 ## Prerequisites
 
-- Java 17 or higher
+- Java 8 (to be compatible with .taco of Tableau Server)
 - Maven
 - Docker (optional, for server deployment)
 
