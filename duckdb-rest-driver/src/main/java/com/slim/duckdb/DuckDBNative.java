@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.slim.dto.ExecuteResponse;
 import com.slim.duckdb.client.DuckDBHttpClient;
 
@@ -41,7 +40,6 @@ class DuckDBNative {
     private static Set<ByteBuffer> alreadyFetchedResults = Collections.newSetFromMap(new IdentityHashMap<>());
 
 
-    private static final ObjectMapper mapper = new ObjectMapper();
 
     static ByteBuffer duckdb_jdbc_startup(byte[] path, boolean read_only, Properties props) throws SQLException {
 

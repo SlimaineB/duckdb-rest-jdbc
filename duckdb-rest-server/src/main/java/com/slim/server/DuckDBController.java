@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.duckdb.StatementReturnType;
@@ -95,7 +96,7 @@ public class DuckDBController {
                         new String[]{"INTEGER"},
                         new String[]{"java.lang.Integer"}
                     );
-                    rows.add(List.of(updateCount));
+                    rows.add(Arrays.asList(updateCount));
                 } else {
                     // Cas DDL (CREATE, DROP, etc)
                     metadata = new ExecuteDuckDBResultSetMetaData(
@@ -108,7 +109,7 @@ public class DuckDBController {
                         new String[]{"VARCHAR"},
                         new String[]{"java.lang.String"}
                     );
-                    rows.add(List.of("OK"));  // ou "DDL Executed"
+                    rows.add(Arrays.asList("OK"));  // ou "DDL Executed"
                 }
             }
 
