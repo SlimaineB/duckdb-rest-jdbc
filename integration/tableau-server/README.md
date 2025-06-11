@@ -1,39 +1,43 @@
-# Intégration DuckDB JDBC avec Tableau Desktop
+# DuckDB JDBC Integration with Tableau Desktop
 
-## Prérequis
+## Prerequisites
 
-- Tableau Desktop installé (exemple : `C:\Program Files\Tableau\Tableau 2025.1\bin\tableau.exe`)
-- Driver JDBC DuckDB
-- Fichier du connecteur `.taco` généré
+- Tableau Desktop installed (example: `C:\Program Files\Tableau\Tableau 2025.1\bin\tableau.exe`)
+- DuckDB JDBC driver
+- Generated `.taco` connector file
 
-## Étapes d'installation
+## Installation Steps
 
-1. **Désactiver la vérification de la signature des connecteurs**  
-   Lancez Tableau Desktop avec l’option suivante :
+1. **Disable connector signature verification**  
+   Launch Tableau Desktop with the following option:
    ```sh
    "C:\Program Files\Tableau\Tableau 2025.1\bin\tableau.exe" -DDisableVerifyConnectorPluginSignature=true
    ```
 
-2. **Installer le driver JDBC**  
-   Copiez le fichier du driver JDBC dans le dossier suivant :
+2. **Install the JDBC driver**  
+   Copy the JDBC driver file to the following folder:
    ```
    C:\Program Files\Tableau\Drivers
    ```
 
-3. **Préparer le connecteur .taco**  
-   - Compressez le dossier `slimdb_jdbc-v1.0.0-taco` au format ZIP.
-   - Renommez l’extension `.zip` en `.taco`.
+3. **Prepare the .taco connector**  
+   - Compress the `slimdb_jdbc-v1.0.0-taco` folder as a ZIP file.
+   - Rename the `.zip` extension to `.taco`.
 
-4. **Installer le connecteur**  
-   Copiez le fichier `.taco` dans le dossier :
+4. **Install the connector**  
+   Copy the `.taco` file to the following folder:
    ```
    C:\Program Files\Tableau\Connectors
    ```
 
-## Remarques
+## Notes
 
-- Redémarrez Tableau Desktop après l’installation du connecteur.
-- Vérifiez que le connecteur apparaît dans la liste des sources de données.
+- Restart Tableau Desktop after installing the connector.
+- Check that the connector appears in the list of data sources.
+- Tableau logs are available at:  
+  ```
+  C:\Users\<account_name>\Documents\My Tableau Repository\Logs
+  ```
 
 ---
 
