@@ -1,4 +1,4 @@
-package com.slim.example;
+package example;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,9 +25,9 @@ public class DuckExecuteQueryMinioExample {
             stmt.execute("SET s3_access_key_id='minioadmin'");
             stmt.execute("SET s3_secret_access_key='minioadmin'");
             stmt.execute("SET s3_use_ssl=false");
-            //ResultSet rs = stmt.executeQuery("SELECT * FROM read_parquet('s3://test-bucket/parquet_brut_big/fichier_1.parquet') order by id desc limit 5");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM read_parquet('s3://test-bucket/parquet_brut_big/fichier_1.parquet') order by id desc limit 5");
             // ResultSet rs = stmt.executeQuery("SELECT * FROM read_parquet('s3://test-bucket/data/init/part-00000-24117887-2b6f-443e-89cf-2ff06ed9a2ae-c000.snappy.parquet') order by id desc limit 5");
-            ResultSet rs = stmt.executeQuery("SELECT TRUE AS bool_col, CAST(42 AS TINYINT) AS tinyint_col, CAST(255 AS UTINYINT) AS utinyint_col, CAST(-12345 AS SMALLINT) AS smallint_col, CAST(54321 AS USMALLINT) AS usmallint_col, CAST(123456 AS INTEGER) AS int_col, CAST(4000000000 AS UINTEGER) AS uint_col, CAST(9223372036854775807 AS BIGINT) AS bigint_col, CAST(18446744073709551615 AS UBIGINT) AS ubigint_col, CAST(3.14 AS FLOAT) AS float_col, CAST(2.718281828459 AS DOUBLE) AS double_col, CAST('2024-06-09 12:34:56.789' AS TIMESTAMP) AS ts_col");
+            //ResultSet rs = stmt.executeQuery("SELECT TRUE AS bool_col, CAST(42 AS TINYINT) AS tinyint_col, CAST(255 AS UTINYINT) AS utinyint_col, CAST(-12345 AS SMALLINT) AS smallint_col, CAST(54321 AS USMALLINT) AS usmallint_col, CAST(123456 AS INTEGER) AS int_col, CAST(4000000000 AS UINTEGER) AS uint_col, CAST(9223372036854775807 AS BIGINT) AS bigint_col, CAST(18446744073709551615 AS UBIGINT) AS ubigint_col, CAST(3.14 AS FLOAT) AS float_col, CAST(2.718281828459 AS DOUBLE) AS double_col, CAST('2024-06-09 12:34:56.789' AS TIMESTAMP) AS ts_col");
             
             /*ResultSet rs = stmt.executeQuery(
                 "SELECT " +

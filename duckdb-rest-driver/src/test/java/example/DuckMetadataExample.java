@@ -1,4 +1,4 @@
-package com.slim.example;
+package example;
 
 
 
