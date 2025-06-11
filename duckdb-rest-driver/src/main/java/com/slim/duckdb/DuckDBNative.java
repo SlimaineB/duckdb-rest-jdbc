@@ -102,13 +102,35 @@ class DuckDBNative {
         stmtRef.putLong(stmtId.getLeastSignificantBits());
         stmtRef.flip();
 
-        // Enregistre le statement (optionnel : tu peux y mettre aussi la requête ou conn_ref pour vérification)
+        
         statementMap.put(stmtRef, new String(query));
 
 
         return stmtRef;
     }
-    static void duckdb_jdbc_release(ByteBuffer stmt_ref) {}
+    static void duckdb_jdbc_release(ByteBuffer stmt_ref) {
+        if (stmt_ref == null) {
+            System.err.println("Statement reference is null. Nothing to release.");
+            return;
+        }
+
+        // Supprime le statement de la map des statements
+        String removedStatement = statementMap.remove(stmt_ref);
+        if (removedStatement != null) {
+            System.out.println("Statement released: " + removedStatement);
+        } else {
+            System.err.println("No statement found for the provided reference.");
+        }
+
+        // Supprime les paramètres associés au statement
+        Object[] removedParams = statementParamsMap.remove(stmt_ref);
+        if (removedParams != null) {
+            System.out.println("Parameters associated with the statement have been released.");
+        }
+
+        // Libère la mémoire associée au ByteBuffer
+        stmt_ref.clear();
+    }
 
     static DuckDBResultSetMetaData duckdb_jdbc_query_result_meta(ByteBuffer result_ref) throws SQLException {
         DuckDBResultSetMetaData meta = resultMetaMap.get(result_ref);
@@ -187,7 +209,36 @@ class DuckDBNative {
 
 
 
-    static void duckdb_jdbc_free_result(ByteBuffer res_ref) {}
+    static void duckdb_jdbc_free_result(ByteBuffer res_ref) {
+        if (res_ref == null) {
+            System.err.println("Result reference is null. Nothing to free.");
+            return;
+        }
+
+        // Supprime les données associées au résultat
+        List<List<Object>> removedData = resultDataMap.remove(res_ref);
+        if (removedData != null) {
+            System.out.println("Result data has been freed.");
+        } else {
+            System.err.println("No result data found for the provided reference.");
+        }
+
+        // Supprime les métadonnées associées au résultat
+        DuckDBResultSetMetaData removedMeta = resultMetaMap.remove(res_ref);
+        if (removedMeta != null) {
+            System.out.println("Result metadata has been freed.");
+        } else {
+            System.err.println("No result metadata found for the provided reference.");
+        }
+
+        // Supprime le résultat de la liste des résultats déjà lus
+        if (alreadyFetchedResults.remove(res_ref)) {
+            System.out.println("Result reference removed from fetched results.");
+        }
+
+        // Libère la mémoire associée au ByteBuffer
+        res_ref.clear();
+    }
 
     static DuckDBVector[] duckdb_jdbc_fetch(ByteBuffer res_ref, ByteBuffer conn_ref) throws SQLException {
         // Empêche le re-fetch multiple
@@ -329,6 +380,30 @@ class DuckDBNative {
                                     }
                                 } else {
                                     throw new SQLException("Type TIMESTAMP inattendu: " + columnData[i].getClass());
+                                }
+                            }
+                            break;
+                        case "HUGEINT":
+                            buffer = ByteBuffer.allocate(rowCount * 16).order(ByteOrder.nativeOrder()); // 16 bytes for 128-bit integers
+                            for (int i = 0; i < rowCount; i++) {
+                                if (columnData[i] == null) {
+                                    buffer.putLong(0L); // High bits
+                                    buffer.putLong(0L); // Low bits
+                                } else if (columnData[i] instanceof BigDecimal) {
+                                    BigDecimal hugeInt = (BigDecimal) columnData[i];
+                                    long lowBits = hugeInt.remainder(BigDecimal.valueOf(1L << 64)).longValue();
+                                    long highBits = hugeInt.divideToIntegralValue(BigDecimal.valueOf(1L << 64)).longValue();
+                                    buffer.putLong(highBits);
+                                    buffer.putLong(lowBits);
+                                } else if (columnData[i] instanceof Number) {
+                                    // Convertir les autres types numériques en BigDecimal
+                                    BigDecimal hugeInt = BigDecimal.valueOf(((Number) columnData[i]).longValue());
+                                    long lowBits = hugeInt.remainder(BigDecimal.valueOf(1L << 64)).longValue();
+                                    long highBits = hugeInt.divideToIntegralValue(BigDecimal.valueOf(1L << 64)).longValue();
+                                    buffer.putLong(highBits);
+                                    buffer.putLong(lowBits);
+                                } else {
+                                    throw new SQLException("Type inattendu pour HUGEINT : " + columnData[i].getClass());
                                 }
                             }
                             break;

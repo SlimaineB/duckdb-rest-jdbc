@@ -1,15 +1,15 @@
-package com.slim.server;
+package com.slim.controller;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.duckdb.StatementReturnType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,22 +17,26 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.slim.dto.ExecuteDuckDBResultSetMetaData;
 import com.slim.dto.ExecuteRequest;
-import com.slim.dto.ExecuteResponse;  
+import com.slim.dto.ExecuteResponse;
+
+import javax.sql.DataSource;
 
 @RestController
 public class DuckDBController {
 
-    private final Connection connection;
+    private final DataSource dataSource;
 
-    public DuckDBController() throws SQLException {
-        this.connection = DriverManager.getConnection("jdbc:duckdb:");
+    @Autowired
+    public DuckDBController(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @PostMapping("/execute")
-
     public ResponseEntity<ExecuteResponse> execute(@RequestBody ExecuteRequest request) {
         System.out.println("[DuckDBController] Reçu requête SQL: " + request.sql);
-        try (PreparedStatement stmt = connection.prepareStatement(request.sql)) {
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(request.sql)) {
 
             // Appliquer les paramètres
             if (request.params != null) {
@@ -121,8 +125,4 @@ public class DuckDBController {
             return ResponseEntity.status(500).body(new ExecuteResponse(e.getMessage()));
         }
     }
-
-
-
-    
 }

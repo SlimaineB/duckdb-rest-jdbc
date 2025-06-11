@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: "jdbc:duckdb:" # URL de connexion DuckDB
+    driver-class-name: org.duckdb.DuckDBDriver # Classe du driver JDBC DuckDB
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: "SELECT 1;" # Requête pour valider les connexions

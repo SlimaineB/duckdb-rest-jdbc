@@ -1,4 +1,4 @@
-package com.slim.server;
+package com.slim;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

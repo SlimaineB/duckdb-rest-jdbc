@@ -20,7 +20,8 @@ public class DuckExecuteQueryExample {
             
             // ResultSet rs = stmt.executeQuery("SELECT 1 AS id, 'hello' AS message");
             ResultSet rs = stmt.executeQuery("SELECT count(1) FROM duckdb_settings()");
-
+            //String query = "SELECT sum(1) AS 'cnt:test_EEEA2B98E81A4A8E857FAA47253B63E7:ok' FROM test";
+            //ResultSet rs = stmt.executeQuery(query);
             ResultSetMetaData meta = rs.getMetaData();
             int cols = meta.getColumnCount();
 
