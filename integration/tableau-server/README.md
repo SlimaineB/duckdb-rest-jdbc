@@ -29,6 +29,14 @@
    ```
    C:\Program Files\Tableau\Connectors
    ```
+## Disabling .taco Signature Verification on Tableau Server
+
+To disable signature verification for `.taco` files on Tableau Server, use the following TSM commands:
+
+```bash
+tsm configuration set -k native_api.disable_verify_connector_plugin_signature -v true
+tsm pending-changes apply
+```
 
 ## Notes
 
@@ -39,5 +47,8 @@
   C:\Users\<account_name>\Documents\My Tableau Repository\Logs
   ```
 
----
+  ```
+
+
+
 
