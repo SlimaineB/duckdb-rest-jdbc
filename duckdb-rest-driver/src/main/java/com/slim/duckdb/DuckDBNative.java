@@ -162,6 +162,10 @@ class DuckDBNative {
                 throw new SQLException(response.getErrorMessage());
             }
 
+            System.out.println("Exécution réussie pour le statement : " + statement);
+            
+            System.out.println("Response reçue : " + response.getData().size() + " lignes, " + response.getMetadata().getColumn_count() + " colonnes");
+
             // Simuler un result_ref avec UUID
             UUID resultId = UUID.randomUUID();
             ByteBuffer resultRef = ByteBuffer.allocate(16);

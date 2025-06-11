@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<connection-fields>
+  <field name="server" label="SlimDB Server" category="general" value-type="selection" editable="true" default-value="http" >
+    <selection-group>
+      <option value="http" label="Http"/>
+    </selection-group>
+  </field>
+
+  <field name="authentication" label="Authentication" category="authentication" value-type="selection" editable="true" default-value="auth-none" >
+    <selection-group>
+      <conditions>
+        <condition field="server" value="http"/>
+      </conditions>
+      <option value="auth-none" label="No Authentication"/>
+    </selection-group>
+  </field>
+  <field name="password" label="Token" category="authentication" value-type="string" secure="true">
+    <conditions>
+      <condition field="authentication" value="auth-pass"/>
+    </conditions>
+  </field>
+  
+  <field name="hostport" label="Http" category="general" value-type="string" editable="true" default-value="" >
+    <conditions>
+      <condition field="server" value="http"/>
+    </conditions>
+  </field>
+</connection-fields>
