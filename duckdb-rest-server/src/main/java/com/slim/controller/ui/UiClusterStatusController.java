@@ -1,4 +1,4 @@
-package com.slim.controller;
+package com.slim.controller.ui;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;

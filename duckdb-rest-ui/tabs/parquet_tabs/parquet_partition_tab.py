@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-def run_partition_tab(base_url: str, disable_ssl_verification: bool):
+def run_parquet_partition_tab(base_url: str, disable_ssl_verification: bool):
     st.subheader("🧩 Partition Recommendation")
 
     st.markdown("This tool helps identify which columns are good candidates for **partitioning** based on their cardinality and value distribution.")

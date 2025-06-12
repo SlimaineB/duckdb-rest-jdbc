@@ -3,10 +3,10 @@ import os
 import requests
 from tabs.query_tab import run_query_tab
 from tabs.cluster_tab import run_cluster_tab
-from tabs.tuning_tab import run_tuning_tab
-from tabs.partition_tab import run_partition_tab
-from tabs.bloom_filter_tab import run_bloom_filter_tab
-from tabs.query_optimizer_tab import run_query_optimizer_tab
+from tabs.parquet_tabs.parquet_file_row_group_size_tab import run_parquet_file_row_group_size_tab
+from tabs.parquet_tabs.parquet_partition_tab import run_parquet_partition_tab
+from tabs.parquet_tabs.parquet_bloom_filter_tab import run_parquet_bloom_filter_tab
+
 
 st.set_page_config(page_title="DuckDB Client", layout="wide")
 
@@ -29,7 +29,6 @@ st.sidebar.markdown("### 🪣 S3 Configuration")
 
 # Test backend status
 API_URL = backend_base_url.rstrip("/") 
-STATUS_URL = backend_base_url.rstrip("/") + "/ui/status"
 
 
 try:
@@ -42,31 +41,30 @@ except Exception as e:
     st.sidebar.error(f"❌ Error reaching backend: {e}")
 
 # Onglets
-tabs = st.tabs([
+main_tabs = st.tabs([
     "🧪 Run Query",
-    "📊 Cluster",
-    "⚙️ Tuning",
-    "🧩 Partitioning",
-    "🧬 Bloom Filter",    
-    "🧠 SQL Query Optimizer"         
+    "📊 Cluster  Status",
+    "⚙️ Parquet Checker",  
 ])
 
 
 
-with tabs[0]:
+with main_tabs[0]:
     run_query_tab(API_URL, disable_ssl_verification)
 
-with tabs[1]:
-    run_cluster_tab(STATUS_URL, disable_ssl_verification)
+with main_tabs[1]:
+    run_cluster_tab(API_URL+ "/ui/status", disable_ssl_verification)
 
-with tabs[2]:
-    run_tuning_tab(API_URL, disable_ssl_verification)
+with main_tabs[2]:
+    parquet_tabs = st.tabs(["⚙️ Parquet File/Row Group Size", "🧩 Parquet Partitioning", "🧬 Parquet Bloom Filter" ])
+    
+    with parquet_tabs[0]:
+        run_parquet_file_row_group_size_tab(API_URL+"/ui/parquet_checker", disable_ssl_verification)
 
-with tabs[3]:
-    run_partition_tab(API_URL,disable_ssl_verification)
+    with parquet_tabs[1]:
+        run_parquet_partition_tab(API_URL+"/ui/parquet_checker",disable_ssl_verification)
 
-with tabs[4]:
-    run_bloom_filter_tab(API_URL, disable_ssl_verification)
+    with parquet_tabs[2]:
+        run_parquet_bloom_filter_tab(API_URL+"/ui/parquet_checker", disable_ssl_verification)
 
-with tabs[5]:
-    run_query_optimizer_tab(API_URL, disable_ssl_verification)
+

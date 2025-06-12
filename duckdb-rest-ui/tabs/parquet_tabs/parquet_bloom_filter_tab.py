@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-def run_bloom_filter_tab(base_url: str, disable_ssl_verification: bool):
+def run_parquet_bloom_filter_tab(base_url: str, disable_ssl_verification: bool):
     st.title("🔍 Parquet Bloom & Filterability Analysis")
 
     s3_path = st.text_input("📂 S3 Path to Parquet File", 

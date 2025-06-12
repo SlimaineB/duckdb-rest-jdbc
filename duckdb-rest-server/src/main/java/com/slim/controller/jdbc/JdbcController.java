@@ -1,4 +1,4 @@
-package com.slim.controller;
+package com.slim.controller.jdbc;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.slim.dto.ExecuteDuckDBResultSetMetaData;
@@ -25,7 +26,8 @@ import javax.sql.DataSource;
  * Contrôleur pour exécuter des requêtes SQL via JDBC.
  * Utilisé pour les requêtes envoyées par l'interface utilisateur.
  */
-@RestController(value = "/jdbc")
+@RestController
+@RequestMapping("/jdbc")
 public class JdbcController {
 
     private final DataSource dataSource;

@@ -11,5 +11,5 @@ spring:
       connection-test-query: "SELECT 1;" # Requête pour valider les connexions
 
 
-app:
-  init-sql-path: "/home/slim/dev/duckdb-rest-jdbc/duckdb-rest-server/src/main/resources/init.sql"
+#app:
+#  init-sql-path: "/home/slim/dev/duckdb-rest-jdbc/duckdb-rest-server/src/main/resources/init.sql"
