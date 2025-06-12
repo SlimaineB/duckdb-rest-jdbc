@@ -26,7 +26,7 @@ public class DuckDBHttpClient {
 
     public ExecuteResponse execute(String sql, Object[] params) throws SQLException {
         try {
-            String executeUrl = this.backendUrl+"/execute"; // Direct access to DuckDB REST server
+            String executeUrl = this.backendUrl+"/jdbc/execute"; // Direct access to DuckDB REST server
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
