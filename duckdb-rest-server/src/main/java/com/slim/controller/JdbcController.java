@@ -21,13 +21,17 @@ import com.slim.dto.ExecuteResponse;
 
 import javax.sql.DataSource;
 
-@RestController
-public class DuckDBController {
+/**
+ * Contrôleur pour exécuter des requêtes SQL via JDBC.
+ * Utilisé pour les requêtes envoyées par l'interface utilisateur.
+ */
+@RestController(value = "/jdbc")
+public class JdbcController {
 
     private final DataSource dataSource;
 
     @Autowired
-    public DuckDBController(DataSource dataSource) {
+    public JdbcController(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 

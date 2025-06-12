@@ -25,3 +25,20 @@ replay_pid*
 
 # Maven/Gradle build directories
 target/
+
+# Python venv and cache
+venv/
+.env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Duckdb
+*.db

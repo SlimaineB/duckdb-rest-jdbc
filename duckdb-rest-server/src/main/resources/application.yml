@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: "jdbc:duckdb:" # URL de connexion DuckDB
+    url: "jdbc:duckdb:mydb.db" # URL de connexion DuckDB
     driver-class-name: org.duckdb.DuckDBDriver # Classe du driver JDBC DuckDB
     hikari:
       maximum-pool-size: 10
