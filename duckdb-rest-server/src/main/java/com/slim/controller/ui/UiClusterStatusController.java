@@ -30,19 +30,24 @@ public class UiClusterStatusController {
             if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
                 double sysLoad = ((com.sun.management.OperatingSystemMXBean) osBean).getSystemLoadAverage();
                 load[0] = sysLoad;
-                // Java ne fournit pas getloadavg() sur toutes plateformes, donc on duplique la valeur
                 load[1] = sysLoad;
                 load[2] = sysLoad;
             }
             status.put("cpu_load", load);
 
-            long totalMem = Runtime.getRuntime().totalMemory();
-            long freeMem = Runtime.getRuntime().freeMemory();
-            long maxMem = Runtime.getRuntime().maxMemory();
+            // Mémoire physique totale (RAM du système ou du conteneur)
+            long totalMem = -1;
+            long freeMem = -1;
+            long jvmMax = Runtime.getRuntime().maxMemory();
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
+                totalMem = sunOsBean.getTotalPhysicalMemorySize();
+                freeMem = sunOsBean.getFreePhysicalMemorySize();
+            }
             Map<String, Object> mem = new HashMap<>();
-            mem.put("total", totalMem);
-            mem.put("free", freeMem);
-            mem.put("max", maxMem);
+            mem.put("total", totalMem); // RAM physique totale
+            mem.put("free", freeMem);   // RAM physique libre
+            mem.put("jvm_max", jvmMax); // Mémoire max JVM (utile pour debug)
             status.put("memory", mem);
 
             return ResponseEntity.ok(status);

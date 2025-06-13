@@ -32,7 +32,7 @@ API_URL = backend_base_url.rstrip("/")
 
 
 try:
-    resp = requests.get(STATUS_URL, verify=not disable_ssl_verification, timeout=2)
+    resp = requests.get(API_URL+ "/ui/status", verify=not disable_ssl_verification, timeout=2)
     if resp.ok:
         st.sidebar.success("✅ Backend is up")
     else:
