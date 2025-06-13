@@ -1,5 +1,7 @@
 package com.slim.controller.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
@@ -9,11 +11,12 @@ import java.util.*;
 import java.util.regex.*;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/ui/parquet_checker")
 public class UiParquetCheckerControler {
+
+    private static final Logger logger = LoggerFactory.getLogger(UiParquetCheckerControler.class);
 
     private final DataSource dataSource;
 
@@ -25,6 +28,8 @@ public class UiParquetCheckerControler {
     public ResponseEntity<?> checkParquetFileSize(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
         int cpuCount = Runtime.getRuntime().availableProcessors();
+
+        logger.info("Checking parquet file size for path: {}", s3Path);
 
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
@@ -39,6 +44,8 @@ public class UiParquetCheckerControler {
                 "WHEN ROUND(SUM(total_compressed_size) / 1024.0 / 1024.0, 2) > 10240 THEN 'Too big ⚠️' " +
                 "ELSE 'Optimal ✅' END AS quality " +
                 "FROM parquet_metadata('%s') GROUP BY file_name ORDER BY compressed_file_size_mb DESC", s3Path);
+
+            logger.debug("Executing SQL: {}", query);
 
             ResultSet rs = st.executeQuery(query);
             ResultSetMetaData meta = rs.getMetaData();
@@ -60,6 +67,8 @@ public class UiParquetCheckerControler {
                 files.add(fileData);
             }
 
+            logger.info("Found {} parquet files. Total row groups: {}", files.size(), totalRowGroups);
+
             Map<String, Object> resp = new HashMap<>();
             resp.put("s3_path", s3Path);
             resp.put("total_row_groups", totalRowGroups);
@@ -68,6 +77,7 @@ public class UiParquetCheckerControler {
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
+            logger.error("Error in checkParquetFileSize: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -75,6 +85,7 @@ public class UiParquetCheckerControler {
     @PostMapping("/check_parquet_row_group_size")
     public ResponseEntity<?> checkRowGroupSize(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
+        logger.info("Checking parquet row group size for path: {}", s3Path);
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
 
@@ -91,6 +102,8 @@ public class UiParquetCheckerControler {
                 "GROUP BY file_name, row_group_id, row_group_num_rows, row_group_bytes " +
                 "ORDER BY size_kb DESC", s3Path);
 
+            logger.debug("Executing SQL: {}", query);
+
             ResultSet rs = st.executeQuery(query);
             ResultSetMetaData meta = rs.getMetaData();
             List<String> columns = new ArrayList<>();
@@ -105,12 +118,15 @@ public class UiParquetCheckerControler {
                 rowGroups.add(rowData);
             }
 
+            logger.info("Found {} row groups for parquet files.", rowGroups.size());
+
             Map<String, Object> resp = new HashMap<>();
             resp.put("s3_path", s3Path);
             resp.put("row_groups", rowGroups);
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
+            logger.error("Error in checkRowGroupSize: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -123,6 +139,7 @@ public class UiParquetCheckerControler {
         while (m.find()) {
             partitions.add(m.group(1));
         }
+        logger.debug("Extracted partition columns from path {}: {}", s3Path, partitions);
         return partitions;
     }
 
@@ -130,6 +147,7 @@ public class UiParquetCheckerControler {
     public ResponseEntity<?> suggestPartitions(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
         int threshold = req.get("threshold") != null ? ((Number) req.get("threshold")).intValue() : 50;
+        logger.info("Suggesting partitions for path: {} with threshold {}", s3Path, threshold);
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
 
@@ -179,6 +197,7 @@ public class UiParquetCheckerControler {
                     result.add(colInfo);
 
                 } catch (Exception ex) {
+                    logger.warn("Error while analyzing column {}: {}", colName, ex.getMessage());
                     Map<String, Object> colInfo = new LinkedHashMap<>();
                     colInfo.put("column", colName);
                     colInfo.put("distinct_values", "error");
@@ -190,6 +209,8 @@ public class UiParquetCheckerControler {
                 }
             }
 
+            logger.info("Partition suggestion completed. Suggestions: {}", suggestions);
+
             Map<String, Object> resp = new HashMap<>();
             resp.put("s3_path", s3Path);
             resp.put("threshold", threshold);
@@ -199,6 +220,7 @@ public class UiParquetCheckerControler {
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
+            logger.error("Error in suggestPartitions: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -207,6 +229,7 @@ public class UiParquetCheckerControler {
     public ResponseEntity<?> getPartitionValueCounts(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
         String column = (String) req.get("column");
+        logger.info("Getting partition value counts for path: {}, column: {}", s3Path, column);
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
 
@@ -229,8 +252,10 @@ public class UiParquetCheckerControler {
                 map.put("repartion", sumCount > 0 ? (Math.round(((int) row[1]) * 100.0 / sumCount) + "%") : "0%");
                 result.add(map);
             }
+            logger.info("Partition value counts computed. Distinct values: {}", result.size());
             return ResponseEntity.ok(Collections.singletonMap("counts", result));
         } catch (Exception e) {
+            logger.error("Error in getPartitionValueCounts: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -238,6 +263,7 @@ public class UiParquetCheckerControler {
     @PostMapping("/parquet_filterability_score")
     public ResponseEntity<?> parquetFilterabilityScore(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
+        logger.info("Computing filterability score for path: {}", s3Path);
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
 
@@ -263,6 +289,7 @@ public class UiParquetCheckerControler {
                     map.put("top_value_ratio", Math.round(topValRatio * 100.0) / 100.0);
                     results.add(map);
                 } catch (Exception ex) {
+                    logger.warn("Error while analyzing column {}: {}", col, ex.getMessage());
                     Map<String, Object> map = new LinkedHashMap<>();
                     map.put("column", col);
                     map.put("distinct_values", null);
@@ -312,12 +339,15 @@ public class UiParquetCheckerControler {
                 r.put("filterability_label", score == 3 ? "✅ High" : (score == 2 ? "🟡 Medium" : "⚠️ Low"));
             }
 
+            logger.info("Filterability score computed for {} columns.", results.size());
+
             Map<String, Object> resp = new HashMap<>();
             resp.put("s3_path", s3Path);
             resp.put("columns", results);
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
+            logger.error("Error in parquetFilterabilityScore: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
@@ -325,6 +355,7 @@ public class UiParquetCheckerControler {
     @PostMapping("/parquet_bloom_filter_check")
     public ResponseEntity<?> checkBloomFilter(@RequestBody Map<String, Object> req) {
         String s3Path = (String) req.get("s3_path");
+        logger.info("Checking bloom filter for path: {}", s3Path);
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
 
@@ -336,6 +367,8 @@ public class UiParquetCheckerControler {
                 "CASE WHEN bloom_filter_length > 0 THEN '✅ Present' ELSE '⚠️ Declared but empty' END " +
                 "ELSE '❌ Absent' END AS status " +
                 "FROM parquet_metadata('%s') WHERE path_in_schema IS NOT NULL ORDER BY file_name, path_in_schema", s3Path);
+
+            logger.debug("Executing SQL: {}", query);
 
             ResultSet rs = st.executeQuery(query);
             ResultSetMetaData meta = rs.getMetaData();
@@ -387,23 +420,29 @@ public class UiParquetCheckerControler {
                 }
             }
 
+            logger.info("Bloom filter check completed. {} file/column pairs analyzed.", summary.size());
+
             Map<String, Object> resp = new HashMap<>();
             resp.put("s3_path", s3Path);
             resp.put("columns", summary);
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
+            logger.error("Error in checkBloomFilter: {}", e.getMessage());
             return ResponseEntity.status(400).body(Collections.singletonMap("error", e.getMessage()));
         }
     }
 
     @GetMapping("/s3_test")
     public ResponseEntity<?> testS3Connection() {
+        logger.info("Testing S3 connection...");
         try (Connection con = dataSource.getConnection();
              Statement st = con.createStatement()) {
             st.executeQuery("SELECT * FROM list('s3://your-bucket/') LIMIT 1;");
+            logger.info("S3 connection OK.");
             return ResponseEntity.ok(Collections.singletonMap("s3", "ok"));
         } catch (Exception e) {
+            logger.error("S3 config error: {}", e.getMessage());
             return ResponseEntity.status(500).body(Collections.singletonMap("error", "S3 config error: " + e.getMessage()));
         }
     }

@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.duckdb.StatementReturnType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +32,8 @@ import javax.sql.DataSource;
 @RequestMapping("/jdbc")
 public class JdbcController {
 
+    private static final Logger logger = LoggerFactory.getLogger(JdbcController.class);
+
     private final DataSource dataSource;
 
     @Autowired
@@ -39,13 +43,14 @@ public class JdbcController {
 
     @PostMapping("/execute")
     public ResponseEntity<ExecuteResponse> execute(@RequestBody ExecuteRequest request) {
-        System.out.println("[DuckDBController] Reçu requête SQL: " + request.sql);
+        logger.info("[DuckDBController] Reçu requête SQL: {}", request.sql);
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement stmt = connection.prepareStatement(request.sql)) {
 
             // Appliquer les paramètres
             if (request.params != null) {
+                logger.debug("Appliquer {} paramètres à la requête.", request.params.length);
                 for (int i = 0; i < request.params.length; i++) {
                     stmt.setObject(i + 1, request.params[i]);
                 }
@@ -57,6 +62,7 @@ public class JdbcController {
 
             if (hasResultSet) {
                 // Cas SELECT
+                logger.info("Exécution d'une requête SELECT.");
                 try (ResultSet rs = stmt.getResultSet()) {
                     ResultSetMetaData meta = rs.getMetaData();
                     int colCount = meta.getColumnCount();
@@ -79,6 +85,8 @@ public class JdbcController {
                         rows.add(row);
                     }
 
+                    logger.info("Résultat SELECT : {} lignes, {} colonnes.", rows.size(), colCount);
+
                     metadata = new ExecuteDuckDBResultSetMetaData(
                         stmt.getParameterMetaData().getParameterCount(),
                         colCount,
@@ -95,7 +103,7 @@ public class JdbcController {
                 int updateCount = stmt.getUpdateCount();
 
                 if (updateCount >= 0) {
-                    // C'est une requête DML (affecte des lignes)
+                    logger.info("Requête DML exécutée, lignes affectées : {}", updateCount);
                     metadata = new ExecuteDuckDBResultSetMetaData(
                         stmt.getParameterMetaData().getParameterCount(),
                         1,
@@ -108,7 +116,7 @@ public class JdbcController {
                     );
                     rows.add(Arrays.asList(updateCount));
                 } else {
-                    // Cas DDL (CREATE, DROP, etc)
+                    logger.info("Requête DDL exécutée.");
                     metadata = new ExecuteDuckDBResultSetMetaData(
                         stmt.getParameterMetaData().getParameterCount(),
                         1,
@@ -123,11 +131,11 @@ public class JdbcController {
                 }
             }
 
+            logger.debug("Réponse JDBC construite et renvoyée.");
             return ResponseEntity.ok(new ExecuteResponse(metadata, rows));
 
         } catch (Exception e) {
-            System.err.println("[DuckDBController] Erreur: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("[DuckDBController] Erreur: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(new ExecuteResponse(e.getMessage()));
         }
     }

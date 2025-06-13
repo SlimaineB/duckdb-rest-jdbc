@@ -42,3 +42,4 @@ dist/
 
 # Duckdb
 *.db
+db_cache/
