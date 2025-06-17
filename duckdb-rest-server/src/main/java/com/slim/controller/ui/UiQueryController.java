@@ -195,31 +195,6 @@ public class UiQueryController {
         return hexString.toString();
     }
 
-    private List<Object> tryReadCache(Connection con, String query) {
-        String parquetPath = getParquetCachePath(query);
-        logger.info("Attempting to read cache from {}", parquetPath);
-        String sql = "SELECT * EXCLUDE (cached_at, cached_date) FROM read_parquet('" + parquetPath + "') " +
-                     "WHERE cached_at >= NOW() - INTERVAL '" + MAX_CACHE_AGE_MINUTES + " minutes'";
-        try (Statement st = con.createStatement()) {
-            ResultSet rs = st.executeQuery(sql);
-            ResultSetMetaData meta = rs.getMetaData();
-            List<Object> row = new ArrayList<>();
-            while (rs.next()) {
-                for (int i = 1; i <= meta.getColumnCount(); i++) {
-                    row.add(sanitizeValue(rs.getObject(i)));
-                }
-            }
-            if (!row.isEmpty()) {
-                logger.info("Cache hit: returning cached result for query.");
-                return Collections.singletonList(row);
-            } else {
-                logger.info("Cache file found but empty or expired for query.");
-            }
-        } catch (Exception e) {
-            logger.info("No valid cache found or failed to read at {}: {}", parquetPath, e.getMessage());
-        }
-        return null;
-    }
 
     private List<List<Object>> tryReadCache(Connection con, String query, List<String> columnsOut) {
         String parquetPath = getParquetCachePath(query);

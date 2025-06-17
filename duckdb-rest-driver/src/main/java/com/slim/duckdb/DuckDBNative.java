@@ -16,7 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.slim.dto.ExecuteResponse;
+import com.slim.duckdb.JdbcUtils.TypeProcessor;
 import com.slim.duckdb.client.DuckDBHttpClient;
+import static com.slim.duckdb.JdbcUtils.TYPE_PROCESSORS;
 
 
 class DuckDBNative {
@@ -240,30 +242,25 @@ class DuckDBNative {
         res_ref.clear();
     }
 
-    static DuckDBVector[] duckdb_jdbc_fetch(ByteBuffer res_ref, ByteBuffer conn_ref) throws SQLException {
-        // Empêche le re-fetch multiple
+    public static DuckDBVector[] duckdb_jdbc_fetch(ByteBuffer res_ref, ByteBuffer conn_ref) throws SQLException {
         if (alreadyFetchedResults.contains(res_ref)) {
-            // Retourne un tableau vide => signal que c’est terminé
             return new DuckDBVector[0];
         }
-        
+
         List<List<Object>> rows = resultDataMap.get(res_ref);
         DuckDBResultSetMetaData meta = resultMetaMap.get(res_ref);
 
         if (rows == null || meta == null) {
             throw new SQLException("Résultat non trouvé pour ce ref");
         }
-        alreadyFetchedResults.add(res_ref); // Marque ce résultat comme "lu"
 
+        alreadyFetchedResults.add(res_ref);
         int columnCount = meta.getColumnCount();
         int rowCount = rows.size();
-
         DuckDBVector[] vectors = new DuckDBVector[columnCount];
 
         for (int col = 0; col < columnCount; col++) {
-            System.out.println("Traitement de la colonne " + col + " avec " + rowCount + " lignes");
-            String duckdbTypeName = meta.getColumnTypeName(col + 1);
-            System.out.println("Type de la colonne " + col + ": " + duckdbTypeName);
+            String type = meta.getColumnTypeName(col + 1).toUpperCase();
             Object[] columnData = new Object[rowCount];
             boolean[] nullmask = new boolean[rowCount];
 
@@ -273,153 +270,16 @@ class DuckDBNative {
                 nullmask[row] = (value == null);
             }
 
-            DuckDBVector vector = new DuckDBVector(duckdbTypeName, rowCount, nullmask);
+            DuckDBVector vector = new DuckDBVector(type, rowCount, nullmask);
+            TypeProcessor processor = TYPE_PROCESSORS.get(type);
+            if (processor == null) {
+                throw new SQLException("Type non supporté : " + type);
+            }
 
-            if (isVarlenType(duckdbTypeName)) {
-                try {
-                    Field f = DuckDBVector.class.getDeclaredField("varlen_data");
-                    f.setAccessible(true);
-                    f.set(vector, columnData);
-                } catch (Exception e) {
-                    throw new SQLException("Erreur lors du remplissage de varlen_data", e);
-                }
-            } else {
-                try {
-                    ByteBuffer buffer;
-                    switch (duckdbTypeName.toUpperCase()) {
-                        case "BOOLEAN":
-                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.put((byte) ((Boolean.TRUE.equals(columnData[i])) ? 1 : 0));
-                            }
-                            break;
-                        case "TINYINT":
-                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.put(columnData[i] == null ? (byte) 0 : ((Number) columnData[i]).byteValue());
-                            }
-                            break;
-                        case "UTINYINT":
-                            buffer = ByteBuffer.allocate(rowCount).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.put(columnData[i] == null ? (byte) 0 : (byte) (((Number) columnData[i]).intValue() & 0xFF));
-                            }
-                            break;
-                        case "SMALLINT":
-                            buffer = ByteBuffer.allocate(rowCount * Short.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putShort(columnData[i] == null ? (short) 0 : ((Number) columnData[i]).shortValue());
-                            }
-                            break;
-                        case "USMALLINT":
-                            buffer = ByteBuffer.allocate(rowCount * Short.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putShort(columnData[i] == null ? (short) 0 : (short) (((Number) columnData[i]).intValue() & 0xFFFF));
-                            }
-                            break;
-                        case "INTEGER":
-                            buffer = ByteBuffer.allocate(rowCount * Integer.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putInt(columnData[i] == null ? 0 : ((Number) columnData[i]).intValue());
-                            }
-                            break;
-                        case "UINTEGER":
-                            buffer = ByteBuffer.allocate(rowCount * Integer.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putInt(columnData[i] == null ? 0 : ((Number) columnData[i]).intValue());
-                            }
-                            break;
-                        case "BIGINT":
-                            buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putLong(columnData[i] == null ? 0L : ((Number) columnData[i]).longValue());
-                            }
-                            break;
-                        case "UBIGINT":
-                            buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putLong(columnData[i] == null ? 0L : ((Number) columnData[i]).longValue());
-                            }
-                            break;
-                        case "FLOAT":
-                            buffer = ByteBuffer.allocate(rowCount * Float.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putFloat(columnData[i] == null ? 0.0f : ((Number) columnData[i]).floatValue());
-                            }
-                            break;
-                        case "DOUBLE":
-                            buffer = ByteBuffer.allocate(rowCount * Double.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                buffer.putDouble(columnData[i] == null ? 0.0d : ((Number) columnData[i]).doubleValue());
-                            }
-                            break;
-                        case "TIMESTAMP":
-                        case "TIMESTAMP_MS":
-                        case "TIMESTAMP_NS":
-                        case "TIMESTAMP_S":
-                            buffer = ByteBuffer.allocate(rowCount * Long.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < rowCount; i++) {
-                                if (columnData[i] == null) {
-                                    buffer.putLong(0L);
-                                } else if (columnData[i] instanceof Number) {
-                                    buffer.putLong(((Number) columnData[i]).longValue());
-                                } else if (columnData[i] instanceof String) {
-                                    String s = (String) columnData[i];
-                                    try {
-                                        long millis;
-                                        if (s.contains("T")) {
-                                            java.time.OffsetDateTime odt = java.time.OffsetDateTime.parse(s);
-                                            millis = odt.toInstant().toEpochMilli();
-                                        } else {
-                                            java.sql.Timestamp ts = java.sql.Timestamp.valueOf(s);
-                                            millis = ts.getTime();
-                                        }
-                                        buffer.putLong(millis);
-                                    } catch (Exception e) {
-                                        throw new SQLException("Impossible de parser le TIMESTAMP: " + columnData[i], e);
-                                    }
-                                } else {
-                                    throw new SQLException("Type TIMESTAMP inattendu: " + columnData[i].getClass());
-                                }
-                            }
-                            break;
-                        case "HUGEINT":
-                            buffer = ByteBuffer.allocate(rowCount * 16).order(ByteOrder.nativeOrder()); // 16 bytes for 128-bit integers
-                            for (int i = 0; i < rowCount; i++) {
-                                if (columnData[i] == null) {
-                                    buffer.putLong(0L); // High bits
-                                    buffer.putLong(0L); // Low bits
-                                } else if (columnData[i] instanceof BigDecimal) {
-                                    BigDecimal hugeInt = (BigDecimal) columnData[i];
-                                    long lowBits = hugeInt.remainder(BigDecimal.valueOf(1L << 64)).longValue();
-                                    long highBits = hugeInt.divideToIntegralValue(BigDecimal.valueOf(1L << 64)).longValue();
-                                    buffer.putLong(highBits);
-                                    buffer.putLong(lowBits);
-                                } else if (columnData[i] instanceof Number) {
-                                    // Convertir les autres types numériques en BigDecimal
-                                    BigDecimal hugeInt = BigDecimal.valueOf(((Number) columnData[i]).longValue());
-                                    long lowBits = hugeInt.remainder(BigDecimal.valueOf(1L << 64)).longValue();
-                                    long highBits = hugeInt.divideToIntegralValue(BigDecimal.valueOf(1L << 64)).longValue();
-                                    buffer.putLong(highBits);
-                                    buffer.putLong(lowBits);
-                                } else {
-                                    throw new SQLException("Type inattendu pour HUGEINT : " + columnData[i].getClass());
-                                }
-                            }
-                            break;
-                        // Ajoute ici d'autres types à longueur fixe si besoin (ex: DECIMAL, UUID, etc.)
-                        default:
-                            throw new SQLException("Type non supporté pour constlen_data : " + duckdbTypeName);
-                    }
-
-                    buffer.flip();
-                    Field f = DuckDBVector.class.getDeclaredField("constlen_data");
-                    f.setAccessible(true);
-                    f.set(vector, buffer);
-
-                } catch (Exception e) {
-                    throw new SQLException("Erreur lors du remplissage de constlen_data", e);
-                }
+            try {
+                processor.process(columnData, vector);
+            } catch (Exception e) {
+                throw new SQLException("Erreur de traitement pour le type " + type, e);
             }
 
             vectors[col] = vector;
